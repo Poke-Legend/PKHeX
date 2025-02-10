@@ -39,7 +39,8 @@ public partial class Main : Form
             WinFormsUtil.TranslateInterface(this, CurrentLanguage); // Translate the UI to language.
 #endif
         FormInitializeSecond();
-        FormLoadCheckForUpdates();
+        // Removed call to FormLoadCheckForUpdates() so that the update label is not used for updates.
+        // FormLoadCheckForUpdates();
 
         var startup = new StartupArguments();
         startup.ReadArguments(args);
@@ -94,7 +95,7 @@ public partial class Main : Form
 
     private readonly string[] main_langlist = Enum.GetNames<ProgramLanguage>();
 
-    private static readonly List<IPlugin> Plugins = [];
+    private static readonly List<IPlugin> Plugins = new List<IPlugin>();
     #endregion
 
     #region Path Variables
@@ -196,10 +197,10 @@ public partial class Main : Form
 
     private void FormLoadCheckForUpdates()
     {
+        // This method is no longer used for update notifications.
         Task.Run(async () =>
         {
             Version? latestVersion;
-            // User might not be connected to the internet or with a flaky connection.
             try { latestVersion = UpdateUtil.GetLatestPKHeXVersion(); }
             catch (Exception ex)
             {
@@ -209,14 +210,15 @@ public partial class Main : Form
             if (latestVersion is null || latestVersion <= Program.CurrentVersion)
                 return;
 
-            while (!IsHandleCreated) // Wait for form to be ready
+            while (!IsHandleCreated)
                 await Task.Delay(2_000).ConfigureAwait(false);
-            Invoke(() => NotifyNewVersionAvailable(latestVersion)); // invoke on GUI thread
+            Invoke(() => NotifyNewVersionAvailable(latestVersion));
         });
     }
 
     private void NotifyNewVersionAvailable(Version version)
     {
+        // This method is not used because the link label is now permanent.
         var date = $"{2000 + version.Major:00}{version.Minor:00}{version.Build:00}";
         var lbl = L_UpdateAvailable;
         lbl.Text = $"{MsgProgramUpdateAvailable} {date}";
@@ -259,6 +261,19 @@ public partial class Main : Form
 
         // Select Language
         CB_MainLanguage.SelectedIndex = GameLanguage.GetLanguageIndex(settings.Startup.Language);
+
+        // Set up the permanent link label.
+        // This link label will always display "Licensed by Pokémon Legends" in a bold, blue, underlined style.
+        L_UpdateAvailable.Text = "Licensed by Pokémon Legends";
+        L_UpdateAvailable.Font = new Font(L_UpdateAvailable.Font, FontStyle.Bold);
+        L_UpdateAvailable.Visible = true;
+        L_UpdateAvailable.LinkBehavior = LinkBehavior.HoverUnderline;
+        L_UpdateAvailable.LinkColor = Color.Blue;
+        L_UpdateAvailable.Enabled = true;
+        L_UpdateAvailable.TabStop = true;
+        // Ensure the link-click event is hooked only once.
+        L_UpdateAvailable.LinkClicked -= L_UpdateAvailable_LinkClicked;
+        L_UpdateAvailable.LinkClicked += L_UpdateAvailable_LinkClicked;
     }
 
     private void FormLoadPlugins()
@@ -1632,4 +1647,22 @@ public partial class Main : Form
             MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
+
+    // Permanent Link Label Event Handler
+    // This method is permanently attached to the link label so that it always shows
+    // "Licensed by Pokémon Legends" and, when clicked, opens the Pokémon Legends website.
+    private void L_UpdateAvailable_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+    {
+        // The URL to open when the link is clicked.
+        string url = "https://pokelegends.org";
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Unable to open link: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
 }
