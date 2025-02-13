@@ -50,7 +50,7 @@ namespace PKHeX.WinForms
             L_Site.Name = "L_Site";
             L_Site.Size = new System.Drawing.Size(116, 15);
             L_Site.TabIndex = 1;
-            L_Site.Text = "ProjectPokemon.org";
+            L_Site.Text = "pokelegends.org/";
             // 
             // PB_Icon
             // 
